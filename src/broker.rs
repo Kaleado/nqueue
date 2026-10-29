@@ -552,6 +552,12 @@ impl Broker {
                     read.arg("STREAMS").arg(&key).arg(">");
                     let reply: Option<Vec<(String, Vec<Entry>)>> = self.query(&read)?;
                     for entry in reply.into_iter().flatten().flat_map(|(_, e)| e) {
+                        if !info.policy.echo && info.policy.mode == Mode::Broadcast && field(&entry.1, "from") == Some(id) {
+                            if info.at_least_once() {
+                                let _: () = self.query(redis::cmd("XACK").arg(&key).arg(&group).arg(&entry.0))?;
+                            }
+                            continue;
+                        }
                         if info.policy.mode == Mode::Compete && !info.at_least_once() {
                             self.finish(&queue, &entry)?;
                         }

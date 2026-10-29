@@ -152,7 +152,8 @@ Policies are defined in the config files, and set:
 
 - **Dequeuing policy**: Which agents can subscribe? Is the queue broadcast or
   compete? How many messages can a single subscriber have in flight? What is
-  the delivery guarantee and lease duration?
+  the delivery guarantee and lease duration? Do broadcast subscribers get
+  their own messages back (`echo`)?
 - **Enqueuing policy**: Which agents can enqueue? What is the format of a
   message? How many items can a single agent enqueue at a time? What is the
   default urgency, and can publishers override it?

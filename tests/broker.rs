@@ -113,6 +113,25 @@ fn resubscribing_keeps_the_position() {
 }
 
 #[test]
+fn broadcast_without_echo_skips_own_messages() {
+    for delivery in [Delivery::AtMostOnce, Delivery::AtLeastOnce] {
+        let (_s, mut b) = setup(Policy { echo: false, delivery, ..broadcast() }, &["a", "b"]);
+        b.enqueue("a", "q", "from a", None).unwrap();
+        b.enqueue("b", "q", "from b", None).unwrap();
+        assert_eq!(bodies(&mut b, "a"), ["from b"], "{delivery:?}");
+        assert_eq!(bodies(&mut b, "b"), ["from a"], "{delivery:?}");
+        assert!(bodies(&mut b, "a").is_empty(), "own message is not left leased ({delivery:?})");
+    }
+}
+
+#[test]
+fn broadcast_echoes_own_messages_by_default() {
+    let (_s, mut b) = setup(broadcast(), &["a"]);
+    b.enqueue("a", "q", "mine", None).unwrap();
+    assert_eq!(bodies(&mut b, "a"), ["mine"]);
+}
+
+#[test]
 fn broadcast_at_least_once_redelivers_to_same_subscriber() {
     let (_s, mut b) = setup(Policy { mode: Mode::Broadcast, ..Policy::default() }, &["a", "b"]);
     let id = send(&mut b, "m");

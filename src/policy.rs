@@ -75,6 +75,9 @@ pub struct Policy {
     pub max_in_flight: usize,
     /// Agents allowed to subscribe; any agent if unset.
     pub subscribers: Option<Vec<String>>,
+    /// Whether broadcast subscribers receive messages they enqueued
+    /// themselves.
+    pub echo: bool,
 
     // enqueuing policy
     /// Agents allowed to enqueue; any agent if unset.
@@ -96,6 +99,7 @@ impl Default for Policy {
             lease_secs: 600,
             max_in_flight: 1,
             subscribers: None,
+            echo: true,
             publishers: None,
             format: Format::Text,
             max_bytes: 64 * 1024,
