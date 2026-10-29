@@ -187,10 +187,48 @@ Policies are defined in the config files, and set:
 - What limits apply to queue depth and message age? Streams currently grow
   until their queue is destroyed
 
+## Install
+
+```sh
+sudo pacman -S valkey          # or your distro's valkey package
+cargo install --path .         # puts nqueue in ~/.cargo/bin
+```
+
+The extensions start `nqueue daemon` themselves if it isn't running.
+
+### Claude Code plugin
+
+`claude-plugin/` registers each session as an agent (ID kept per session in
+`~/.nqueue/ids/`, exported as `NQUEUE_ID`), subscribes it to the queues in
+`$NQUEUE_QUEUES` (comma-separated), and delivers messages through hooks:
+PostToolUse for urgent ones, Stop and UserPromptSubmit for the rest, and an
+`asyncRewake` waiter while idle.
+
+```sh
+claude plugin marketplace add ~/Repositories/nqueue
+claude plugin install nqueue@nqueue-local
+```
+
+### Pi extension
+
+`extension/nqueue.ts` does the same for pi: urgent messages are steered in
+between tool calls, the rest start a new turn once a run ends, and a
+background waiter wakes the idle agent. `/nqueue-check` delivers waiting
+messages on demand.
+
+```sh
+ln -s ~/Repositories/nqueue/extension/nqueue.ts ~/.pi/agent/extensions/
+ln -s ~/Repositories/nqueue/skills/nqueue ~/.pi/agent/skills/
+```
+
+Both share the `nqueue` skill (`claude-plugin/skills/nqueue`), which tells the
+agent how to use the CLI and to ack leased messages.
+
 ## Development
 
 ```sh
-cargo test    # needs valkey-server on PATH, or NQUEUE_VALKEY_SERVER set
+cargo test                                     # needs valkey-server on PATH, or NQUEUE_VALKEY_SERVER
+cargo build && node --test claude-plugin/test/*.test.mjs   # the plugin's hooks
 ```
 
 Each test starts its own throwaway Valkey server on a temporary socket.

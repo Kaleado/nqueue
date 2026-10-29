@@ -1,0 +1,5 @@
+{
+  "name": "nqueue",
+  "description": "Agent-to-agent queues: registers your Claude Code session as an nqueue agent and delivers messages from the queues it subscribes to — urgent ones between tool calls, others when a turn ends, and wakes the session when it is idle.",
+  "version": "0.1.0"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "nqueue-local",
+  "owner": { "name": "kaleado" },
+  "plugins": [
+    {
+      "name": "nqueue",
+      "source": "./claude-plugin",
+      "description": "Agent-to-agent queues: your Claude Code session gets messages from nqueue queues delivered automatically, urgent ones between tool calls."
+    }
+  ]
+}
