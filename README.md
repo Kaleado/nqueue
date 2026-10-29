@@ -229,7 +229,7 @@ agent how to use the CLI and to ack leased messages.
 
 ```sh
 cargo test                                     # needs valkey-server on PATH, or NQUEUE_VALKEY_SERVER
-cargo build && node --test claude-plugin/test/*.test.mjs   # the plugin's hooks
+cargo build && node --test claude-plugin/test/*.test.mjs extension/test/*.test.mjs   # plugin hooks, pi extension
 ```
 
 Each test starts its own throwaway Valkey server on a temporary socket.

@@ -37,12 +37,17 @@ const read = (f) => { try { return fs.readFileSync(f, "utf8").trim() || null; } 
 
 let id = read(idFile);
 
+// The environment for nqueue acting as this session's agent, or as nobody
+// before it has one (an inherited NQUEUE_ID is only a requested ID).
+function agentEnv() {
+  const env = { ...process.env };
+  if (id) env.NQUEUE_ID = id;
+  else delete env.NQUEUE_ID;
+  return env;
+}
+
 function nq(args, timeout = 8000) {
-  const r = spawnSync(NQUEUE_BIN, args, {
-    encoding: "utf8",
-    timeout,
-    env: { ...process.env, ...(id ? { NQUEUE_ID: id } : {}) },
-  });
+  const r = spawnSync(NQUEUE_BIN, args, { encoding: "utf8", timeout, env: agentEnv() });
   return { ok: r.status === 0, code: r.status, stdout: (r.stdout || "").trim(), stderr: (r.stderr || "").trim() || String(r.error || "") };
 }
 

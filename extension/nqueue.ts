@@ -21,6 +21,9 @@ const MAX_MESSAGES = 40; // per delivery, so a backlog can't flood the context
 const BATCH_MS = 1000; // let a burst of messages arrive together
 const WAIT_SECS = 30;
 const QUEUES = (process.env.NQUEUE_QUEUES || "").split(",").map((q) => q.trim()).filter(Boolean);
+// an ID chosen when pi was started; read now, because the extension sets
+// NQUEUE_ID to the current session's ID later
+const CHOSEN_ID = process.env.NQUEUE_ID || null;
 
 interface Delivered {
   message: { id: string; queue: string; from: string; urgency: string; body: string };
@@ -31,12 +34,17 @@ interface Delivered {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const read = (f: string) => { try { return fs.readFileSync(f, "utf8").trim() || null; } catch { return null; } };
 
+// The environment for nqueue acting as `id`, or as nobody: NQUEUE_ID is
+// this session's ID once registered, which must not leak into other calls.
+function agentEnv(id?: string | null) {
+  const env = { ...process.env };
+  if (id) env.NQUEUE_ID = id;
+  else delete env.NQUEUE_ID;
+  return env;
+}
+
 function nq(args: string[], id?: string | null) {
-  const r = spawnSync(NQUEUE_BIN, args, {
-    encoding: "utf8",
-    timeout: 8000,
-    env: { ...process.env, ...(id ? { NQUEUE_ID: id } : {}) },
-  });
+  const r = spawnSync(NQUEUE_BIN, args, { encoding: "utf8", timeout: 8000, env: agentEnv(id) });
   return { ok: r.status === 0, stdout: (r.stdout || "").trim(), stderr: (r.stderr || "").trim() || String(r.error || "") };
 }
 
@@ -106,7 +114,7 @@ export default function nqueueExtension(pi: ExtensionAPI) {
       nq(["unregister"], recorded);
       r = nq(["register", recorded]);
     } else {
-      r = nq(["register", ...(process.env.NQUEUE_ID ? [process.env.NQUEUE_ID] : [])]);
+      r = nq(["register", ...(CHOSEN_ID ? [CHOSEN_ID] : [])]);
     }
     if (!r.ok) {
       notifyHuman(`nqueue: could not register: ${r.stderr}`, "error");
@@ -147,7 +155,7 @@ export default function nqueueExtension(pi: ExtensionAPI) {
     while (!closed && gen === loopGen && id) {
       const args = ["wait", "--timeout", String(WAIT_SECS), ...(busy ? ["--urgent-only"] : [])];
       const code = await new Promise<number | null>((resolve) => {
-        const child = spawn(NQUEUE_BIN, args, { stdio: "ignore", env: { ...process.env, NQUEUE_ID: id! } });
+        const child = spawn(NQUEUE_BIN, args, { stdio: "ignore", env: agentEnv(id) });
         waiter = child;
         child.on("exit", (c) => resolve(c));
         child.on("error", () => resolve(null));
